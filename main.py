@@ -1,15 +1,28 @@
 import discord
+from discord.ext import commands
+import apikey as key
 
-class MyClient(discord.Client):
-    async def on_ready(self):
-        print(f'Logged on as {self.user}!')
+debug_Separator = "------------------------------"
 
-    async def on_message(self, message):
-        print(f'Message from {message.author}: {message.content}')
+# Commands will be predicated with a '!', 
+# Enables all intents from developer portal
+client = commands.Bot(command_prefix = '!', intents = discord.Intents.all())
 
-intents = discord.Intents.default()
-intents.message_Content = True
+# New Event
+@client.event
 
-client = MyClient(intents=intents)
-client.run('my token goes here')
+# Upon bot is ready, exectute this constructor
+async def on_ready():
+    print("Hello I'm ready, enter a command!")      # DEBUG
+    print(debug_Separator)                          # DEBUG
+    pass
+# Event, END
 
+@client.command()
+
+# Hello event, ctx: "inputs" from discord
+async def hello(ctx):
+    await ctx.send("Hello from the bot!")
+# Command, END
+
+client.run(key.disc_token)
