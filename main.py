@@ -51,6 +51,7 @@ async def hello(ctx):
 
 @client.command(pass_context = True)
 async def join(ctx):
+    print("Called")
     if (ctx.author.voice):
         channel = ctx.message.author.voice.channel
         voice = await channel.connect()
@@ -106,9 +107,12 @@ async def play(ctx, arg):
         # Get the id of the discord server
         guild_id = ctx.message.guild.id
 
-        if guild_id in queues:
+        # Attempt to find our serverID in current queue
+        if (guild_id in queues):
+            # Found, so just add into queue to be played next
             queues[guild_id].append(source)
         else:
+            # Not found, nothing in queue. Add one
             queues[guild_id] = [source]
         
         await ctx.send("Added to queue")
@@ -136,4 +140,49 @@ async def queue(ctx, arg):
     await ctx.send("Added %d to queue" % guild_id)
 # Remove this queue. One is present inside play...
 
+@client.event
+async def on_message(msg):
+    # Detect if an emoji is sent; by, colon at start and end
+    if ((":" == msg.content[0]) and (":" == msg.content[-1])):
+        # Get just the name of the sent emoji, no colons here
+        emoji_name = msg.content[1:-1]
+
+        # Get the user that sent this message
+        author = msg.guild.get_member(msg.author.id)
+        # Check to see if they have premium. Only run if false
+        if (author.premium_since is None):
+            # Look through the entire list of emoji from the server
+            for emoji in msg.guild.emojis:
+                # If one of the correct name is found, send it
+                if emoji_name == emoji.name:
+                    # First remove the old message
+                    await msg.delete()
+
+                    # Find the nick name if able
+                    nickName = msg.author.nick
+                    if (nickName == None):
+                        # No name found, use the global name
+                        nickName = msg.author.display_name
+
+                    # Create a webhook to send a message
+                    webhook = await msg.channel.create_webhook(name = nickName)
+
+                    # Use webhook to send message as the author
+                    await webhook.send(
+                        str(emoji), username = nickName, avatar_url = msg.author.avatar
+                    )
+
+                    # Remove webhook after done using them
+                    webhooks = await msg.channel.webhooks()
+                    for webhook in webhooks:
+                        await webhook.delete()
+
+                    break           # Emoji found, end loop
+            # for, END
+        # if premium, END
+
+    # Needed to ensure all other commands are called after.
+    await client.process_commands(msg)
+
+# start of main()
 client.run(key.disc_token)
