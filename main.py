@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 from discord import FFmpegPCMAudio
+from discord import Member
+from discord.ext.commands import has_permissions, MissingPermissions
 
 # Import neccesary tokens
 import apikey as key
@@ -26,8 +28,8 @@ client = commands.Bot(command_prefix = '!', intents = intents)
 # Upon bot is ready, exectute this constructor event
 @client.event
 async def on_ready():
-    print("Hello I'm ready, enter a command!")      # DEBUG
-    print("------------------------------")         # DEBUG
+    print("Hello I'm ready, enter a command!")
+    print("------------------------------")
     pass
 # Constructor, END
 
@@ -51,7 +53,6 @@ async def hello(ctx):
 
 @client.command(pass_context = True)
 async def join(ctx):
-    print("Called")
     if (ctx.author.voice):
         channel = ctx.message.author.voice.channel
         voice = await channel.connect()
@@ -60,7 +61,7 @@ async def join(ctx):
         await ctx.send("Now playing.")
         player = voice.play(source)
     else:
-        await ctx.send(ctx.message.author.name + " is not currently in a channel.")
+        await ctx.send(ctx.message.author.nick + " is not currently in a channel.")
 
 @client.command(pass_context = True)
 async def leave(ctx):
@@ -143,7 +144,8 @@ async def queue(ctx, arg):
 @client.event
 async def on_message(msg):
     # Detect if an emoji is sent; by, colon at start and end
-    if ((":" == msg.content[0]) and (":" == msg.content[-1])):
+    if (not msg.author.bot and \
+        (":" == msg.content[0]) and (":" == msg.content[-1])):
         # Get just the name of the sent emoji, no colons here
         emoji_name = msg.content[1:-1]
 
@@ -158,11 +160,8 @@ async def on_message(msg):
                     # First remove the old message
                     await msg.delete()
 
-                    # Find the nick name if able
-                    nickName = msg.author.nick
-                    if (nickName == None):
-                        # No name found, use the global name
-                        nickName = msg.author.display_name
+                    # Grab author's name
+                    nickName = msg.author.display_name
 
                     # Create a webhook to send a message
                     webhook = await msg.channel.create_webhook(name = nickName)
@@ -184,5 +183,46 @@ async def on_message(msg):
     # Needed to ensure all other commands are called after.
     await client.process_commands(msg)
 
+@client.command()
+@has_permissions(kick_members = True)
+async def kick(ctx, member: discord.Member, *, reason = None):
+    await member.kick(reason = reason)
+    await ctx.send(f'user {member} has been kicked from the server.')
+
+@kick.error
+async def kick_error(ctx, error):
+    if (isinstance(error, commands.MissingPermissions)):
+        await ctx.send("You don't have permission to kick.")
+        return
+    await ctx.send("Something went wrong.")
+
+@client.command()
+@has_permissions(ban_members = True)
+async def ban(ctx, member: discord.Member, *, reason = None):
+    await member.ban(reason = reason)
+    await ctx.send(f'User {member} has been banned.')
+
+@ban.error
+async def ban_error(ctx, error):
+    if (isinstance(error, commands.MissingPermissions)):
+        await ctx.send("You don't have permission to ban.")
+
+@client.command()
+@has_permissions(ban_members = True)
+async def unban(ctx, member: discord.Member, *, reason = None):
+    await ctx.guild.unban(member, reason = reason)
+    await ctx.send(f'User {member} has been unbanned.')
+    
+@client.command()
+async def embed(ctx):
+    embed = discord.Embed(title = "Goooooooooogle", url = "https://google.com",\
+                          description = "Heres google", color = 0x5A2F26)
+    embed.set_author(name = ctx.author.display_name, url = "https://bing.com", icon_url = ctx.author.avatar)
+    embed.set_thumbnail(url = "https://w0.peakpx.com/wallpaper/208/932/HD-wallpaper-mountin-calm-lake-simple.jpg")
+    embed.add_field(name = "Labradore", value = "Cute Dog", inline = True)
+    embed.add_field(name = "Chihuahua", value = "Little Devil", inline = True)
+    embed.set_footer(text = "Thanks for reading :)")
+
+    await ctx.send(embed = embed)
 # start of main()
 client.run(key.disc_token)
