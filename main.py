@@ -4,6 +4,8 @@ from discord import FFmpegPCMAudio
 from discord import Member
 from discord.ext.commands import has_permissions, MissingPermissions
 
+import praw
+
 # Import neccesary tokens
 import apikey as key
 
@@ -20,6 +22,42 @@ def check_queue(ctx, id):
         voice = ctx.guild.voice_client
         source = queues[id].pop(0)      # pop from top of stack
         player = voice.play(source)     # play song
+
+async def check_emoji(msg):
+    # Get just the name of the sent emoji, no colons here
+    emoji_name = msg.content[1:-1]
+
+    # Get the user that sent this message
+    author = msg.guild.get_member(msg.author.id)
+    # Check to see if they have premium. Only run if false
+    if (author.premium_since is None):
+        # Look through the entire list of emoji from the server
+        for emoji in msg.guild.emojis:
+            # If one of the correct name is found, send it
+            if emoji_name == emoji.name:
+                # First remove the old message
+                await msg.delete()
+
+                # Grab author's name
+                nickName = msg.author.display_name
+
+                # Create a webhook to send a message
+                webhook = await msg.channel.create_webhook(name = nickName)
+
+                # Use webhook to send message as the author
+                await webhook.send(
+                    str(emoji), username = nickName, avatar_url = msg.author.avatar
+                )
+
+                # Remove webhook after done using them
+                webhooks = await msg.channel.webhooks()
+                for webhook in webhooks:
+                    await webhook.delete()
+
+                    break           # Emoji found, end loop
+            # emoji is in the server list
+        # for, END
+    # if premium, END
 
 # Commands will be predicated with a '!', 
 # Enables all intents from developer portal
@@ -115,7 +153,7 @@ async def play(ctx, arg):
         else:
             # Not found, nothing in queue. Add one
             queues[guild_id] = [source]
-        
+
         await ctx.send("Added to queue")
     else:
         # Not currently playing. So play the song
@@ -137,47 +175,18 @@ async def queue(ctx, arg):
         queues[guild_id].append(source)
     else:
         queues[guild_id] = [source]
-    
+
     await ctx.send("Added %d to queue" % guild_id)
 # Remove this queue. One is present inside play...
 
 @client.event
 async def on_message(msg):
-    # Detect if an emoji is sent; by, colon at start and end
-    if (not msg.author.bot and \
-        (":" == msg.content[0]) and (":" == msg.content[-1])):
-        # Get just the name of the sent emoji, no colons here
-        emoji_name = msg.content[1:-1]
 
-        # Get the user that sent this message
-        author = msg.guild.get_member(msg.author.id)
-        # Check to see if they have premium. Only run if false
-        if (author.premium_since is None):
-            # Look through the entire list of emoji from the server
-            for emoji in msg.guild.emojis:
-                # If one of the correct name is found, send it
-                if emoji_name == emoji.name:
-                    # First remove the old message
-                    await msg.delete()
-
-                    # Grab author's name
-                    nickName = msg.author.display_name
-
-                    # Create a webhook to send a message
-                    webhook = await msg.channel.create_webhook(name = nickName)
-
-                    # Use webhook to send message as the author
-                    await webhook.send(
-                        str(emoji), username = nickName, avatar_url = msg.author.avatar
-                    )
-
-                    # Remove webhook after done using them
-                    webhooks = await msg.channel.webhooks()
-                    for webhook in webhooks:
-                        await webhook.delete()
-
-                    break           # Emoji found, end loop
-            # for, END
+    if (not msg.author.bot):
+        # Detect if an emoji is sent; by, colon at start and end
+        if ((":" == msg.content[0]) and (":" == msg.content[-1])):
+            # https://stackoverflow.com/questions/4664850/how-to-find-all-occurrences-of-a-substring
+            await check_emoji(msg)        # process emoji command
         # if premium, END
 
     # Needed to ensure all other commands are called after.
@@ -212,7 +221,7 @@ async def ban_error(ctx, error):
 async def unban(ctx, member: discord.Member, *, reason = None):
     await ctx.guild.unban(member, reason = reason)
     await ctx.send(f'User {member} has been unbanned.')
-    
+
 @client.command()
 async def embed(ctx):
     embed = discord.Embed(title = "Goooooooooogle", url = "https://google.com",\
