@@ -1,2 +1,6 @@
-# Ignore all binary files
+# Ignore all binary/cache files
 binary/
+__pycache__/
+
+# Ignore private folder
+misc/botInfo/
