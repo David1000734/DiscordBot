@@ -1,16 +1,20 @@
+# Import Discord!!!
 import discord
 from discord.ext import commands
 from discord import FFmpegPCMAudio
 from discord import Member
 from discord.ext.commands import has_permissions, MissingPermissions
 
-import praw
+# Reddit API. Use async version since discord bot
+import asyncpraw
 
 # Import neccesary tokens
-import apikey as key
+import misc.botInfo.apikey as key
 
 intents = discord.Intents.all()
 intents.members = True
+
+reddit_instance = 0
 
 # Dictionary, store our queue of songs
 queues = {}
@@ -66,6 +70,19 @@ client = commands.Bot(command_prefix = '!', intents = intents)
 # Upon bot is ready, exectute this constructor event
 @client.event
 async def on_ready():
+    # Reference the global variable instead of local
+    global reddit_instance
+
+    # Instance must be created within async function
+    # to allow for async for to work.
+    reddit_instance = asyncpraw.Reddit(
+        client_id = key.red_clientID,
+        client_secret = key.red_secret,
+        username = key.red_username,
+        password = key.red_password,
+        user_agent = "test_bot"
+    )
+
     print("Hello I'm ready, enter a command!")
     print("------------------------------")
     pass
@@ -233,5 +250,14 @@ async def embed(ctx):
     embed.set_footer(text = "Thanks for reading :)")
 
     await ctx.send(embed = embed)
+
+@client.command()
+async def reddit(ctx, arg):
+    subreddit = await reddit_instance.subreddit(arg)
+    retrieved_post = subreddit.hot(limit = 3)
+    async for submission in retrieved_post:
+        await ctx.send(submission.title + ' '\
+                       + submission.url +'\n' + "https://www.reddit.com" + submission.permalink)
+
 # start of main()
 client.run(key.disc_token)

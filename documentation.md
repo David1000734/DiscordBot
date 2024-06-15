@@ -7,7 +7,16 @@ Youtube reference: https://www.youtube.com/watch?v=cCiqcu2NP8I&list=PL-7Dfw57ZZV
 
 Discord Documentation: https://discordpy.readthedocs.io/en/latest/
 
-Redit to Discord ref: https://www.youtube.com/watch?v=0r1Bhf7ALJU
+Reddit Documentation: https://apraw.readthedocs.io/en/latest/index.html
+
+### TEMP
+Check Time: https://stackoverflow.com/questions/63625246/discord-py-bot-run-function-at-specific-time-every-day
+
+Youtube Bot: https://www.youtube.com/watch?v=KgRNnTb5kZ0
+
+Youtube Searching: https://stackoverflow.com/questions/64021026/youtube-search-command-for-discord-py
+
+Youtube Bot #2: https://www.youtube.com/watch?v=dRHUW_KnHLs
 
 ### Steps for gettings started:
 
