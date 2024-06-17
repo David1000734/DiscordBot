@@ -15,6 +15,7 @@ intents = discord.Intents.all()
 intents.members = True
 
 reddit_instance = 0
+reddit_post = []        # TEMP, store current posts
 
 # Dictionary, store our queue of songs
 queues = {}
@@ -253,11 +254,30 @@ async def embed(ctx):
 
 @client.command()
 async def reddit(ctx, arg):
+    global reddit_post
+    is_dup = False
+    temp_arr = []
+
     subreddit = await reddit_instance.subreddit(arg)
-    retrieved_post = subreddit.hot(limit = 3)
+    retrieved_post = subreddit.hot(limit = 5)
     async for submission in retrieved_post:
-        await ctx.send(submission.title + ' '\
-                       + submission.url +'\n' + "https://www.reddit.com" + submission.permalink)
+        # For more efficiency, use merge sort and then compare only one 
+        for post in reddit_post:
+            if (post.id == submission.id):
+                is_dup = True
+                break
+
+        if (not is_dup):
+            print("yes print.")
+            await ctx.send(submission.title + ' '\
+                  + submission.url +'\n' + "https://www.reddit.com" + submission.permalink)
+        else:
+            print("no print.")
+            print("submissionID: %s, postID: %s" % (submission.id, post.id))
+        reddit_post.append(submission)
+        temp_arr.append(submission)
+        is_dup = False
+    reddit_post = temp_arr
 
 # start of main()
 client.run(key.disc_token)
