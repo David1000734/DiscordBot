@@ -64,17 +64,44 @@ async def check_emoji(msg):
         # for, END
     # if premium, END
 
-async def reddit_background():
+async def reddit_background(sub, get_limit, sleep_time):
     await client.wait_until_ready()
     # Only done once. 
-    counter = 0
-    sleep_time = 5          # Repeat time in seconds
+
+    global reddit_post      # Reference the global variable
+    is_dup = False          # Bool, check for duplicate
+    temp_arr = []           # Temp array of current call
     channel = client.get_channel(key.disc_botSpam)  # Find channel to send to
 
     # Time loop here
     while not client.is_closed():
-        counter += 1
-        await channel.send(counter)             # Do action here
+        subreddit = await reddit_instance.subreddit(sub)
+        retrieved_post = subreddit.hot(limit = get_limit)
+        async for submission in retrieved_post:
+            # For more efficiency, use merge sort and then compare only one 
+            for post in reddit_post:
+                # Iterate through entire running total of the list.
+                if (post.id == submission.id):
+                    is_dup = True
+                    break
+
+            # If a duplicate is found, don't print it.
+            if (not is_dup):
+                # Not a duplicate, print it.
+                print("yes print.")
+                await channel.send(submission.title + ' '\
+                    + submission.url +'\n' + "https://www.reddit.com" + submission.permalink)
+            else:
+                # Pending removal...
+                print("no print.")
+                print("submissionID: %s, postID: %s" % (submission.id, post.id))
+            # Otherwise, it is a duplicate. Don't do anything
+            reddit_post.append(submission)      # Add onto current list
+            temp_arr.append(submission)         # Keep a temp list of current subreddit
+            is_dup = False                      # Reset variable
+        # async for, END
+        reddit_post = temp_arr                  # At end of loop, clear the current list with new list
+
         await asyncio.sleep(sleep_time)         # Run every 'X' seconds
 
 # Commands will be predicated with a '!', 
@@ -96,9 +123,6 @@ async def on_ready():
         password = key.red_password,
         user_agent = "test_bot"
     )
-
-    # Create time loop. Continuously run this function.
-    client.loop.create_task(reddit_background())
 
     print("Hello I'm ready, enter a command!")
     print("------------------------------")
@@ -270,30 +294,34 @@ async def embed(ctx):
 
 @client.command()
 async def reddit(ctx, arg):
-    global reddit_post
-    is_dup = False
-    temp_arr = []
 
-    subreddit = await reddit_instance.subreddit(arg)
-    retrieved_post = subreddit.hot(limit = 5)
-    async for submission in retrieved_post:
-        # For more efficiency, use merge sort and then compare only one 
-        for post in reddit_post:
-            if (post.id == submission.id):
-                is_dup = True
-                break
+    # Create time loop. Continuously run this function.
+    client.loop.create_task(reddit_background(arg, 3, 5))
 
-        if (not is_dup):
-            print("yes print.")
-            await ctx.send(submission.title + ' '\
-                  + submission.url +'\n' + "https://www.reddit.com" + submission.permalink)
-        else:
-            print("no print.")
-            print("submissionID: %s, postID: %s" % (submission.id, post.id))
-        reddit_post.append(submission)
-        temp_arr.append(submission)
-        is_dup = False
-    reddit_post = temp_arr
+    # global reddit_post
+    # is_dup = False
+    # temp_arr = []
+
+    # subreddit = await reddit_instance.subreddit(arg)
+    # retrieved_post = subreddit.hot(limit = 5)
+    # async for submission in retrieved_post:
+    #     # For more efficiency, use merge sort and then compare only one 
+    #     for post in reddit_post:
+    #         if (post.id == submission.id):
+    #             is_dup = True
+    #             break
+
+    #     if (not is_dup):
+    #         print("yes print.")
+    #         await ctx.send(submission.title + ' '\
+    #               + submission.url +'\n' + "https://www.reddit.com" + submission.permalink)
+    #     else:
+    #         print("no print.")
+    #         print("submissionID: %s, postID: %s" % (submission.id, post.id))
+    #     reddit_post.append(submission)
+    #     temp_arr.append(submission)
+    #     is_dup = False
+    # reddit_post = temp_arr
 
 # start of main()
 client.run(key.disc_token)
