@@ -9,9 +9,9 @@ Discord Documentation: https://discordpy.readthedocs.io/en/latest/
 
 Reddit Documentation: https://apraw.readthedocs.io/en/latest/index.html
 
+### TEMP
 aPRAW: https://pypi.org/project/aPRAW/
 
-### TEMP
 Check Time: https://stackoverflow.com/questions/63625246/discord-py-bot-run-function-at-specific-time-every-day
 
 Youtube Bot: https://www.youtube.com/watch?v=KgRNnTb5kZ0
@@ -22,13 +22,15 @@ Youtube Bot #2: https://www.youtube.com/watch?v=dRHUW_KnHLs
 
 ### Steps for gettings started:
 
-* Install the base discord library
+* Install discord library
 
     `pip install discord.py`
 * Install async reddit library
 
     `pip install asyncpraw`
-* Install 
+* Install asyncio
+
+    `pip install asyncio`
 * To run the bot
 
     `python3 main.py`

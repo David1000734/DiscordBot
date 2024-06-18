@@ -2,8 +2,8 @@
 import discord
 from discord.ext import commands
 from discord import FFmpegPCMAudio
-from discord import Member
 from discord.ext.commands import has_permissions, MissingPermissions
+import asyncio
 
 # Reddit API. Use async version since discord bot
 import asyncpraw
@@ -64,6 +64,19 @@ async def check_emoji(msg):
         # for, END
     # if premium, END
 
+async def reddit_background():
+    await client.wait_until_ready()
+    # Only done once. 
+    counter = 0
+    sleep_time = 5          # Repeat time in seconds
+    channel = client.get_channel(key.disc_botSpam)  # Find channel to send to
+
+    # Time loop here
+    while not client.is_closed():
+        counter += 1
+        await channel.send(counter)             # Do action here
+        await asyncio.sleep(sleep_time)         # Run every 'X' seconds
+
 # Commands will be predicated with a '!', 
 # Enables all intents from developer portal
 client = commands.Bot(command_prefix = '!', intents = intents)
@@ -83,6 +96,9 @@ async def on_ready():
         password = key.red_password,
         user_agent = "test_bot"
     )
+
+    # Create time loop. Continuously run this function.
+    client.loop.create_task(reddit_background())
 
     print("Hello I'm ready, enter a command!")
     print("------------------------------")
