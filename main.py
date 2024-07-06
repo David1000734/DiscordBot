@@ -70,12 +70,11 @@ async def reddit_background(sub, get_limit, sleep_time):
 
     global reddit_post      # Reference the global variable
     is_dup = False          # Bool, check for duplicate
-    temp_arr = []           # Temp array of current call
     channel = client.get_channel(key.disc_botSpam)  # Find channel to send to
 
     # Time loop here
     while not client.is_closed():
-        subreddit = await reddit_instance.subreddit(sub)
+        subreddit = await reddit_instance.subreddit(sub, fetch = True)
         retrieved_post = subreddit.hot(limit = get_limit)
         async for submission in retrieved_post:
             # For more efficiency, use merge sort and then compare only one 
@@ -87,8 +86,11 @@ async def reddit_background(sub, get_limit, sleep_time):
 
             # If a duplicate is found, don't print it.
             if (not is_dup):
+                # Only add if it wasn't on the list already
+                reddit_post.append(submission)      # Add onto current list
+
                 # Not a duplicate, print it.
-                print("yes print.")
+                # Build discord message here.
                 await channel.send(submission.title + ' '\
                     + submission.url +'\n' + "https://www.reddit.com" + submission.permalink)
             else:
@@ -96,11 +98,8 @@ async def reddit_background(sub, get_limit, sleep_time):
                 print("no print.")
                 print("submissionID: %s, postID: %s" % (submission.id, post.id))
             # Otherwise, it is a duplicate. Don't do anything
-            reddit_post.append(submission)      # Add onto current list
-            temp_arr.append(submission)         # Keep a temp list of current subreddit
             is_dup = False                      # Reset variable
         # async for, END
-        reddit_post = temp_arr                  # At end of loop, clear the current list with new list
 
         await asyncio.sleep(sleep_time)         # Run every 'X' seconds
 
@@ -294,34 +293,32 @@ async def embed(ctx):
 
 @client.command()
 async def reddit(ctx, arg):
+    sub_valid = True        # Flag to keep track of valid subreddits
 
-    # Create time loop. Continuously run this function.
-    client.loop.create_task(reddit_background(arg, 3, 5))
+    # Find valid subreddits by attempting to get from them.
+    try:
+        # Get the subreddit
+        subRed = await reddit_instance.subreddit(arg, fetch = True)
 
-    # global reddit_post
-    # is_dup = False
-    # temp_arr = []
+        # Attempt to search it
+        async for submission in subRed.new(limit = 3):
+            pass
+    except:
+        channel = client.get_channel(key.disc_botSpam)
+        await channel.send("Error: Unknown or invalid subreddit provided: %s" % arg)
+        sub_valid = False
 
-    # subreddit = await reddit_instance.subreddit(arg)
-    # retrieved_post = subreddit.hot(limit = 5)
-    # async for submission in retrieved_post:
-    #     # For more efficiency, use merge sort and then compare only one 
-    #     for post in reddit_post:
-    #         if (post.id == submission.id):
-    #             is_dup = True
-    #             break
+    # If a valid subreddit was provied, create a task
+    if (sub_valid):
+        # Create time loop. Continuously run this function.
+        current_tasks = client.loop.create_task(reddit_background(arg, 3, 5))
 
-    #     if (not is_dup):
-    #         print("yes print.")
-    #         await ctx.send(submission.title + ' '\
-    #               + submission.url +'\n' + "https://www.reddit.com" + submission.permalink)
-    #     else:
-    #         print("no print.")
-    #         print("submissionID: %s, postID: %s" % (submission.id, post.id))
-    #     reddit_post.append(submission)
-    #     temp_arr.append(submission)
-    #     is_dup = False
-    # reddit_post = temp_arr
+        current_tasks.set_name(arg)
+        print("My name is %s" % current_tasks.get_name())
+        await asyncio.sleep(5)
+
+        current_tasks.cancel()
+        print("Task %s has been canceled" % current_tasks.get_name())
 
 # start of main()
 client.run(key.disc_token)

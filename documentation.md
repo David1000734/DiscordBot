@@ -65,3 +65,9 @@ NOTE: Emoji ID can be found by sending the emoji, copy link, paste, and copying 
     await msg.guild.me.edit(nick = msg.author.nick)
     await msg.guild.me.edit(nick = None)
 ```
+* To get all new submissions
+``` python
+    subreddit = await reddit_instance.subreddit(arg)
+    async for submission in subreddit.stream.submissions():
+        print(submission.id)
+```
