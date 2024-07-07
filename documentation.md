@@ -9,8 +9,9 @@ Discord Documentation: https://discordpy.readthedocs.io/en/latest/
 
 Reddit Documentation: https://apraw.readthedocs.io/en/latest/index.html
 
-### TEMP
 aPRAW: https://pypi.org/project/aPRAW/
+
+### TEMP
 
 Check Time: https://stackoverflow.com/questions/63625246/discord-py-bot-run-function-at-specific-time-every-day
 
@@ -70,4 +71,59 @@ NOTE: Emoji ID can be found by sending the emoji, copy link, paste, and copying 
     subreddit = await reddit_instance.subreddit(arg)
     async for submission in subreddit.stream.submissions():
         print(submission.id)
+```
+
+* Difference when using cogs and no cogs. <strong>For commands</strong>
+``` python
+# Regular, no cogs
+@client.command()
+
+# Using cogs
+@commands.command()
+```
+
+* Difference when using cogs and no cogs. <strong>For events</strong>
+``` python
+# Regular, no cogs
+@client.event
+
+# Using cogs
+@ commands.Cog.listener()
+```
+
+* How to setup a new cog folder using Music as an example
+``` python
+# music.py, Cog file
+import discord
+from discord.ext import commands
+
+class Music(commands.Cog):
+    def __init__(self, client):
+        self.client = client
+    
+
+async def setup(client):
+    await client.add_cog(Music(client))
+
+# Main file
+import discord
+from discord.ext import commands
+
+async def on_ready():
+    await client.load_extension("cogs." + "music")
+
+bot.run(DISCORD_TOKEN)
+```
+
+* Remember to include the neccessary function at the end when <ins>re-defining</ins>
+the on_message function. <br></br>
+Note, in cogs, they are <strong>NOT</strong> redefined.
+``` python
+# Within main.py
+@client.event
+async def on_message(msg):
+    # Do stuff here
+
+    # Needed to ensure all other commands are called after.
+    await client.process_commands(msg)
 ```
