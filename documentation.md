@@ -127,3 +127,21 @@ async def on_message(msg):
     # Needed to ensure all other commands are called after.
     await client.process_commands(msg)
 ```
+
+* Taking more than one argument
+``` python
+# Just taking two
+@client.command()
+async def args(ctx, arg1, arg2):
+    await ctx.send("Command1: $s, Command2: $s" % (arg1, arg2))
+
+# All passed as list
+@client.command()
+async def args(ctx, *args):
+    await ctx.send("Commands: " + (','.join(args)))
+
+# All passed as one argument
+@client.command()
+async def args(ctx, *, arg):
+    await ctx.send(arg)
+```

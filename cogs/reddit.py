@@ -1,4 +1,3 @@
-import discord
 from discord.ext import commands
 import asyncio      # Import time keeping/looping
 
@@ -8,12 +7,18 @@ import asyncpraw
 # Import keys
 import misc.botInfo.apikey as key
 
+# Import custom exceptions
+import misc.customException as ex
+
 class Reddit(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.reddit_post = []        # Store current posts
         self.reddit_instance = None  # The reddit API
         self.reddit_Task = []        # Running total of tasks created
+        self.usage_Msg = \
+            "Usage: !reddit <command>\n" + \
+            "<command>: add <subreddit>, remove <subreddit>, clear, list."
 
     # *************** Non-command/event Functions ***************
     async def init_Reddit(self):
@@ -27,7 +32,7 @@ class Reddit(commands.Cog):
             user_agent = "test_bot"
         )
 
-    async def reddit_background(self, sub_Name, get_limit, sleep_time):
+    async def background_Task(self, sub_Name, get_limit, sleep_time):
         await self.client.wait_until_ready()
         # Only done once. 
 
@@ -61,10 +66,10 @@ class Reddit(commands.Cog):
             # async for, END
 
             await asyncio.sleep(sleep_time)         # Run every 'X' seconds
+        # while, END
+    # background task, END
 
-    # *************** Discord command/event Functions ***************
-    @commands.command()
-    async def reddit(self, ctx, arg):
+    async def reddit_Add(self, ctx, arg):
         sub_valid = True        # Flag to keep track of valid subreddits
 
         # Validate subreddits and check conditions
@@ -105,14 +110,14 @@ class Reddit(commands.Cog):
 
         if (sub_valid):
             # Create time loop. Continuously run this function.
-            current_tasks = self.client.loop.create_task(self.reddit_background(sub_Name = arg, get_limit = 3, sleep_time = 5))
+            current_tasks = self.client.loop.create_task(self.background_Task(sub_Name = arg, get_limit = 3, sleep_time = 5))
 
             current_tasks.set_name(arg)     # Set the name to be the same as the subreddit
             self.reddit_Task.append(current_tasks)      # store to array
         # If valid sub, END
+    # reddit_add, END
 
-    @commands.command()
-    async def removeSub(self, ctx, arg):
+    async def reddit_Remove(self, ctx, arg):
         found = False
 
         # Iterate through the task list
@@ -132,17 +137,86 @@ class Reddit(commands.Cog):
         
         if (not found):
             await ctx.send("Subreddit: \"%s\" not found. Unable to remove." % arg)
+    # removeSub, END
 
-    @commands.command()
-    async def clearAll(self, ctx):
-
+    async def reddit_Clear(self, ctx):
         for currSub in self.reddit_Task:
-
             await ctx.send("Removed subreddit: \"%s\", from tasks." % currSub.get_name())
             currSub.cancel()
         
         # Clear list
         self.reddit_Task.clear()
+    # Clear all, END
+
+    async def reddit_List(self, ctx):
+        listName = []
+
+        for currSub in self.reddit_Task:
+            listName.append(currSub.get_name())
+
+        await ctx.send("Current subreddits: %s" % ", ".join(listName))
+
+    # *************** Discord command/event Functions ***************
+    @commands.command()
+    async def reddit(self, ctx, *arg):
+        print("List of strings: " + ", ".join(arg))      # DEBUG
+
+        try:
+            # arg[0] will will contain the command
+            match arg[0].lower():
+                # add command will add a new background task for the subreddit
+                case "add":
+                    if (len(arg) > 2):
+                        raise ex.InvalidSubreddit()
+                    else:
+                        # arg[1] contains the word
+                        await self.reddit_Add(ctx, arg[1])
+                
+                # Attempt to remove a reddit background task if one exist
+                case "remove":
+                    if (len(arg) > 2):
+                        raise ex.InvalidSubreddit()
+                    else:
+                        # arg[1] contains the word
+                        await self.reddit_Remove(ctx, arg[1])
+
+                # Clear all existing reddit background task
+                case "clear":
+                    if (len(arg) > 1):
+                        raise ex.UnknownCommand()
+                    else:
+                        await self.reddit_Clear(ctx)
+                    
+                case "list":
+                    if (len(arg) > 1):
+                        raise ex.UnknownCommand()
+                    else:
+                        await self.reddit_List(ctx)
+
+                # Default state
+                case _:
+                    # Have the try catch do the message
+                    raise IndexError("")
+            # Match, END
+        
+        # Tuple out of range when ran with "!reddit"
+        # Thus prompt usage error
+        except IndexError:
+            await ctx.send(self.usage_Msg)
+        
+        except ex.UnknownCommand as e:
+            await ctx.send("Unknown command: \"%s\"" % " ".join(arg))
+        
+        except ex.InvalidSubreddit as e:
+            await ctx.send("Error: Subreddit \"%s\" is not allowed." \
+                                    % " ".join(arg[ 1: ]))
+
+        except Exception as error:
+            await ctx.send("Unknown error has occured: %s" % error)
+
+        # try except, END
+    # Reddit command block, END
+# Reddit class, END
 
 async def setup(client):
     await client.add_cog(Reddit(client))
