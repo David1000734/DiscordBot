@@ -60,10 +60,34 @@ class Reddit(commands.Cog):
                     # Build discord message here.
                     await channel.send(submission.title + ' '\
                         + submission.url +'\n' + "https://www.reddit.com" + submission.permalink)
+                    print("Sub name: " + submission.subreddit.display_name)
+                else:
+                    print("Not printing: %s." % sub_Name)
                 # if, END
                 # Otherwise, it is a duplicate. Don't do anything
                 is_dup = False                      # Reset variable
             # async for, END
+
+            # Check to see if we went past the limit
+            # If the total number of post is greater than the number of
+            # task times the limit, we went over. Remove the last few
+            # Ex. limit = 10, 2 task.
+            # If our total post is 23, we went over by 3 because 10 * 2 = 20
+            if (len(self.reddit_post) > len(self.reddit_Task * get_limit)):
+                post_Counter = 0
+                # We went over, remove the diference.
+                for post in self.reddit_post:
+                    if (post.subreddit.display_name == sub_Name and post_Counter > get_limit):
+                        # Find the correct name and remove only the
+                        # post that went over the limit.
+                        self.reddit_post.remove(post)
+                        print("Removed some old ones: " + self.reddit_post)
+                    else:
+                        # Increment counter
+                        post_Counter += 1
+                        print("Not removing anything: " + self.reddit_post)
+                # For, END
+            # Check limit, END
 
             await asyncio.sleep(sleep_time)         # Run every 'X' seconds
         # while, END
@@ -137,6 +161,8 @@ class Reddit(commands.Cog):
         
         if (not found):
             await ctx.send("Subreddit: \"%s\" not found. Unable to remove." % arg)
+        else:
+            print("something")
     # removeSub, END
 
     async def reddit_Clear(self, ctx):
@@ -159,8 +185,6 @@ class Reddit(commands.Cog):
     # *************** Discord command/event Functions ***************
     @commands.command()
     async def reddit(self, ctx, *arg):
-        print("List of strings: " + ", ".join(arg))      # DEBUG
-
         try:
             # arg[0] will will contain the command
             match arg[0].lower():
