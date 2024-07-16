@@ -202,13 +202,17 @@ class Reddit(commands.Cog):
     async def reddit_Help(self, ctx):
         # Send help message. Formating...
         await ctx.send("```\n"     \
-            + " Help ".center(75, '_') + "\n\n" \
-            + "!reddit <commands>\n"  \
-            + "\t<commands>: add <subreddit> <webhook_URL>, remove <subreddit>, clear, list, help.\n\n" \
-            + "\t<subreddit>: Whatever the name of the subreddit it may be. Remember, " \
+            + " Help ".center(50, '_') + "\n\n" \
+            + "usage: !reddit [commands] ...\n"  \
+            + "\t[commands]: add <subreddit> <webhook_URL>, remove <subreddit>, clear, list, help.\n\n" \
+            + "\t[subreddit]: Whatever the name of the subreddit it may be. Remember, " \
             + "banned or subreddits containing spaces are not allowed.\n\n" \
-            + "\t<webhook_URL>: Please provide the URL of a webhook that is created and set it up " \
-            + "within the server. Refer to this link for help https://www.youtube.com/watch?v=fKksxz2Gdnc.\n" \
+            + "\t[webhook_URL]: Please provide the URL of a webhook that is created and set it up " \
+            + "within the server. Refer to this link for help https://www.youtube.com/watch?v=fKksxz2Gdnc.\n\n" \
+            + "add: Add the specified subreddit into the queue and post using the provided webhook.\n" \
+            + "remove: Remove the specified subreddit from tasks if it exist.\n" \
+            + "clear: Clear all subreddit from tasks.\n" \
+            + "list: Show all current subreddits running.\n" \
             + "```")
 
     # *************** Discord command/event Functions ***************
