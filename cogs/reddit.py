@@ -1,8 +1,10 @@
 from discord.ext import commands
 import asyncio      # Import time keeping/looping
+from discord import SyncWebhook         # Connect to webhooks
 
 # Import reddit api. Async version
 import asyncpraw
+import asyncprawcore as apc
 
 # Import keys
 import misc.botInfo.apikey as key
@@ -56,10 +58,11 @@ class Reddit(commands.Cog):
                 if (not is_dup):
                     # Only add if it wasn't on the list already
 
+                    # We must flip how we add it from the first run and the continuous ones.
                     if (flip):
-                        self.reddit_post.append(submission)      # Add onto current list
+                        self.reddit_post.append(submission)      # Add to end of list
                     else:
-                        self.reddit_post.insert(0, submission)   # Add to beginning
+                        self.reddit_post.insert(0, submission)   # Add to beginning of list
 
                     # Not a duplicate, print it.
                     # Build discord message here.
@@ -79,13 +82,11 @@ class Reddit(commands.Cog):
             # Ex. limit = 10, 2 task.
             # If our total post is 23, we went over by 3 because 10 * 2 = 20
             if (len(self.reddit_post) >= len(self.reddit_Task) * get_limit):
-            #if (len(self.reddit_post) >= len(self.reddit_Task) * (2)):
                 post_Counter = 0
-                # We went over, remove the diference.
-                for post in reversed(self.reddit_post):
+                # We went over, remove the diference. Last to First
+                for post in self.reddit_post:
                     # If the counter went over limit, remove the very last posts
                     if (post.subreddit.display_name == sub_Name and post_Counter >= get_limit):
-                    #if (post.subreddit.display_name == sub_Name and post_Counter >= (2)):
                         # Find the correct name and remove only the
                         # post that went over the limit. (The very last few or oldest)
                         print("Previous: ")
@@ -95,19 +96,16 @@ class Reddit(commands.Cog):
 
                         print("\nRemoved some old ones: ")
                         print(self.reddit_post)
+
                     # Limit not reached, increment here
                     elif (post.subreddit.display_name == sub_Name):
-                        # print("Display: %s\t name: %s" % (post.subreddit.display_name, sub_Name))
-                        # print("post_Counter: %i\t get_limit: %i" % (post_Counter, get_limit))
                         # Increment counter
                         post_Counter += 1
-                        # print("Not removing anything: ")
-                        # print(self.reddit_post)
+
                     # The subreddit we found is not related to
                     # this one, don't increment.
                     else:
                         # Just keep swimming
-                        # print("pass")
                         pass
                 # For, END
             # Check limit, END
@@ -156,7 +154,11 @@ class Reddit(commands.Cog):
 
             # *************** Check for Valid Channel ID ***************
 
+
+            # *************** Valid Channel ID, END ***************
+
         except Exception as error:
+            print("inside add")
             await ctx.send("Subreddit: \"%s\" Error: %s" % (arg, error))
             sub_valid = False
 
@@ -216,9 +218,11 @@ class Reddit(commands.Cog):
             match arg[0].lower():
                 # add command will add a new background task for the subreddit
                 case "add":
-                    await self.reddit_Add(ctx, arg[1], key.disc_botSpam)
+                    await self.reddit_Add(ctx, arg[1], key.disc_botSpam)        # DEBUG
+                    
+                    # 3 is the correct number of arguments for this command
                     if (len(arg) != 3):
-                        print("Unknown")
+                        print("Unknown")            # DEBUG
                         raise ex.UnknownCommand()
                     else:
                         channel = self.client.get_channel(arg[1])
@@ -269,6 +273,9 @@ class Reddit(commands.Cog):
         except ex.InvalidSubreddit as e:
             await ctx.send("Error: Subreddit \"%s\" is not allowed." \
                                     % " ".join(arg[ 1: ]))
+
+        # except apc.AsyncPrawcoreException as error:
+        #     await ctx.send("Subreddit: \"%s\" Error: %s" % (arg[1], error))        
 
         except Exception as error:
             await ctx.send("Unknown error has occured: %s" % error)
