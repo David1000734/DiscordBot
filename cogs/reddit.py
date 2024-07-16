@@ -18,7 +18,7 @@ class Reddit(commands.Cog):
         self.reddit_Task = []        # Running total of tasks created
         self.usage_Msg = \
             "Usage: !reddit <command>\n" + \
-            "<command>: add <subreddit>, remove <subreddit>, clear, list."
+            "<command>: add <subreddit> <channel_ID>, remove <subreddit>, clear, list."
 
     # *************** Non-command/event Functions ***************
     async def init_Reddit(self):
@@ -32,12 +32,13 @@ class Reddit(commands.Cog):
             user_agent = "test_bot"
         )
 
-    async def background_Task(self, sub_Name, get_limit, sleep_time):
+    async def background_Task(self, sub_Name, get_limit, sleep_time, channel_ID):
         await self.client.wait_until_ready()
         # Only done once. 
 
         is_dup = False          # Bool, check for duplicate
-        channel = self.client.get_channel(key.disc_botSpam)  # Find channel to send to
+        flip = True             # Flip how we append onto the list
+        channel = self.client.get_channel(channel_ID)  # Find channel to send to
 
         # Time loop here
         while not self.client.is_closed():
@@ -54,7 +55,11 @@ class Reddit(commands.Cog):
                 # If a duplicate is found, don't print it.
                 if (not is_dup):
                     # Only add if it wasn't on the list already
-                    self.reddit_post.append(submission)      # Add onto current list
+
+                    if (flip):
+                        self.reddit_post.append(submission)      # Add onto current list
+                    else:
+                        self.reddit_post.insert(0, submission)   # Add to beginning
 
                     # Not a duplicate, print it.
                     # Build discord message here.
@@ -73,27 +78,46 @@ class Reddit(commands.Cog):
             # task times the limit, we went over. Remove the last few
             # Ex. limit = 10, 2 task.
             # If our total post is 23, we went over by 3 because 10 * 2 = 20
-            if (len(self.reddit_post) > len(self.reddit_Task * get_limit)):
+            if (len(self.reddit_post) >= len(self.reddit_Task) * get_limit):
+            #if (len(self.reddit_post) >= len(self.reddit_Task) * (2)):
                 post_Counter = 0
                 # We went over, remove the diference.
-                for post in self.reddit_post:
-                    if (post.subreddit.display_name == sub_Name and post_Counter > get_limit):
+                for post in reversed(self.reddit_post):
+                    # If the counter went over limit, remove the very last posts
+                    if (post.subreddit.display_name == sub_Name and post_Counter >= get_limit):
+                    #if (post.subreddit.display_name == sub_Name and post_Counter >= (2)):
                         # Find the correct name and remove only the
-                        # post that went over the limit.
+                        # post that went over the limit. (The very last few or oldest)
+                        print("Previous: ")
+                        print(self.reddit_post)
+
                         self.reddit_post.remove(post)
-                        print("Removed some old ones: " + self.reddit_post)
-                    else:
+
+                        print("\nRemoved some old ones: ")
+                        print(self.reddit_post)
+                    # Limit not reached, increment here
+                    elif (post.subreddit.display_name == sub_Name):
+                        # print("Display: %s\t name: %s" % (post.subreddit.display_name, sub_Name))
+                        # print("post_Counter: %i\t get_limit: %i" % (post_Counter, get_limit))
                         # Increment counter
                         post_Counter += 1
-                        print("Not removing anything: " + self.reddit_post)
+                        # print("Not removing anything: ")
+                        # print(self.reddit_post)
+                    # The subreddit we found is not related to
+                    # this one, don't increment.
+                    else:
+                        # Just keep swimming
+                        # print("pass")
+                        pass
                 # For, END
             # Check limit, END
+            flip = False
 
             await asyncio.sleep(sleep_time)         # Run every 'X' seconds
         # while, END
     # background task, END
 
-    async def reddit_Add(self, ctx, arg):
+    async def reddit_Add(self, ctx, arg, ID):
         sub_valid = True        # Flag to keep track of valid subreddits
 
         # Validate subreddits and check conditions
@@ -101,20 +125,7 @@ class Reddit(commands.Cog):
             # Used to find out if task has already been created.
             found = False
 
-            # Ensure that it has been instantiated.
-            if (self.reddit_instance == None):
-                await self.init_Reddit()
-
-            # Find valid subreddits by attempting to get from them.
-            # Get the subreddit
-            subRed = await self.reddit_instance.subreddit(arg, fetch = True)
-
-            # Attempt to search it
-            async for submission in subRed.new(limit = 3):
-                pass
-
-            # Ensure passed subreddit does not already have a task for it.
-
+            # *************** Check for Duplicate Subs ***************
             # Iterate through the task list
             for idx, currSub in enumerate(self.reddit_Task):
                 # Search for a task with the that subreddit name
@@ -127,6 +138,23 @@ class Reddit(commands.Cog):
             # If one is found, error
             if (found):
                 raise ValueError("Duplicate subreddit tasks is not allowed.")
+            # *************** Duplicate Subs, END ***************
+
+            # *************** Check for Valid Subreddits ***************
+            # Ensure that it has been instantiated.
+            if (self.reddit_instance == None):
+                await self.init_Reddit()
+
+            # Find valid subreddits by attempting to get from them.
+            # Get the subreddit
+            subRed = await self.reddit_instance.subreddit(arg, fetch = True)
+
+            # Attempt to search it
+            async for submission in subRed.new(limit = 3):
+                pass
+            # *************** Valid Subs, END ***************
+
+            # *************** Check for Valid Channel ID ***************
 
         except Exception as error:
             await ctx.send("Subreddit: \"%s\" Error: %s" % (arg, error))
@@ -134,7 +162,7 @@ class Reddit(commands.Cog):
 
         if (sub_valid):
             # Create time loop. Continuously run this function.
-            current_tasks = self.client.loop.create_task(self.background_Task(sub_Name = arg, get_limit = 3, sleep_time = 5))
+            current_tasks = self.client.loop.create_task(self.background_Task(sub_Name = arg, get_limit = 3, sleep_time = 5, channel_ID = ID))
 
             current_tasks.set_name(arg)     # Set the name to be the same as the subreddit
             self.reddit_Task.append(current_tasks)      # store to array
@@ -161,8 +189,6 @@ class Reddit(commands.Cog):
         
         if (not found):
             await ctx.send("Subreddit: \"%s\" not found. Unable to remove." % arg)
-        else:
-            print("something")
     # removeSub, END
 
     async def reddit_Clear(self, ctx):
@@ -190,11 +216,20 @@ class Reddit(commands.Cog):
             match arg[0].lower():
                 # add command will add a new background task for the subreddit
                 case "add":
-                    if (len(arg) > 2):
-                        raise ex.InvalidSubreddit()
+                    await self.reddit_Add(ctx, arg[1], key.disc_botSpam)
+                    if (len(arg) != 3):
+                        print("Unknown")
+                        raise ex.UnknownCommand()
                     else:
+                        channel = self.client.get_channel(arg[1])
+
+                        # Check for valid channel ID
+                        if (channel == None):
+                            print("Invalid channel")
+                            raise ex.UnknownCommand()           # DEBUG, UNTESTED
+
                         # arg[1] contains the word
-                        await self.reddit_Add(ctx, arg[1])
+                        # await self.reddit_Add(ctx, arg[1], key.disc_botSpam)
                 
                 # Attempt to remove a reddit background task if one exist
                 case "remove":
