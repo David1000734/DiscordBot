@@ -145,3 +145,11 @@ async def args(ctx, *args):
 async def args(ctx, *, arg):
     await ctx.send(arg)
 ```
+
+* Connecting to a server's webhook
+``` python
+from discord import SyncWebhook
+
+webhook = SyncWebhook.from_url("URL of server's webhook bot")
+webhook.send("Hello World!")
+```
