@@ -18,9 +18,6 @@ class Reddit(commands.Cog):
         self.reddit_post = []        # Store current posts
         self.reddit_instance = None  # The reddit API
         self.reddit_Task = []        # Running total of tasks created
-        self.usage_Msg = \
-            "Usage: !reddit <command>\n" + \
-            "<command>: add <subreddit> <webhook_URL>, remove <subreddit>, clear, list."
 
     # *************** Non-command/event Functions ***************
     async def init_Reddit(self):
@@ -35,6 +32,17 @@ class Reddit(commands.Cog):
         )
 
     async def background_Task(self, sub_Name, get_limit, sleep_time, hook_URL):
+        """
+        Reddit background task to be continuously ran. Each post it gets will be
+        placed into a global array and will keep track if it gets over the limit
+
+        :param sub_Name: Name of the subreddit to be added.
+        :param get_limit: Specified limit to number of post to get.
+        :param sleep_time: How long should the task wait in-between running.
+        :param hook_URL: URL of the webhook this task will use to post
+
+        :note: This task does NOT do ANY checks. All inputs are assumed valid.
+        """
         await self.client.wait_until_ready()        # Don't run while sleeping
         # Only done once. 
         is_dup = False          # Bool, check for duplicate
@@ -108,7 +116,17 @@ class Reddit(commands.Cog):
         # while, END
     # background task, END
 
-    async def reddit_Add(self, ctx, arg, URL):
+    async def reddit_Add(self, arg, URL):
+        """
+        Function will attempt to create a new background task with the specified
+        subreddit. All subreddit and webhook tests are also done here.
+        If any fail, an exception is raised. 
+
+        :param arg: The subreddit to add
+        :param URL: What is the URL of the webhook
+
+        :note: All checks for the background task is done here
+        """
         # Used to find out if task has already been created.
         found = False
 
@@ -160,6 +178,14 @@ class Reddit(commands.Cog):
     # reddit_add, END
 
     async def reddit_Remove(self, ctx, arg):
+        """
+        Function will attempt to remove a specified subreddit
+        from the current list of background tasks. If it does not
+        exist, an error message is printed and no action is taken.
+
+        :param ctx: Method of printing
+        :param arg: What subreddit to remove from list
+        """
         found = False
 
         # Iterate through the task list
@@ -179,9 +205,22 @@ class Reddit(commands.Cog):
         
         if (not found):
             await ctx.send("Subreddit: \"%s\" not found. Unable to remove." % arg)
+        else: 
+            # Also remove it's post from the list
+            for post in self.reddit_post:
+                # Look for the post that matches this subreddit
+                if (post.subreddit.display_name == arg):
+                    # If found, remove it
+                    self.reddit_post.remove(post)
+        # if else, END
     # removeSub, END
 
     async def reddit_List(self, ctx):
+        """
+        Function will simply print the current list of background tasks
+
+        :param ctx: Method of printing
+        """
         listName = []
 
         for currSub in self.reddit_Task:
@@ -191,15 +230,29 @@ class Reddit(commands.Cog):
     # list, END
 
     async def reddit_Clear(self, ctx):
+        """
+        Function will simply clear all subreddits from the list
+
+        :param ctx: Method of printing
+        """
         for currSub in self.reddit_Task:
             await ctx.send("Removed subreddit: \"%s\", from tasks." % currSub.get_name())
             currSub.cancel()
         
-        # Clear list
+        # Clear background task list
         self.reddit_Task.clear()
+
+        # Clear post list
+        self.reddit_post.clear()
     # Clear all, END
 
     async def reddit_Help(self, ctx):
+        """
+        Function will print a help message for how to use
+        the reddit command.
+        
+        :param ctx: Method of printing
+        """
         # Send help message. Formating...
         await ctx.send("```\n"     \
             + " Help ".center(50, '_') + "\n\n" \
@@ -218,20 +271,26 @@ class Reddit(commands.Cog):
     # *************** Discord command/event Functions ***************
     @commands.command()
     async def reddit(self, ctx, *arg):
+        """
+        Function handles all reddit related calls. It will take in
+        an unspecified number of arguments and attempt to match them
+        to a command. If unsuccessful, a usage message is printed.
+
+        :param ctx: Method of printing
+        :param arg: Full list of the user's command. Unspecified length
+        """
         try:
             # arg[0] will will contain the command
             match arg[0].lower():
                 # add command will add a new background task for the subreddit
-                case "add":
-                    # await self.reddit_Add(ctx, arg[1], key.disc_botSpam)        # DEBUG
-                    
+                case "add":                    
                     # 3 is the correct number of arguments for this command
                     if (len(arg) != 3):
                         # 3 arguments were not provided, error
                         raise ex.UnknownCommand()
                     else:
                         # arg[1] contains the word
-                        await self.reddit_Add(ctx, arg[1], arg[2])
+                        await self.reddit_Add(arg[1], arg[2])
                 
                 # Attempt to remove a reddit background task if one exist
                 case "remove":
@@ -269,7 +328,7 @@ class Reddit(commands.Cog):
         # Tuple out of range when ran with "!reddit"
         # Thus prompt usage error
         except IndexError:
-            await ctx.send("Usage: !reddit <command>\n" \
+            await ctx.send("Usage: !reddit [command]\n" \
                            "Use `!reddit help` for more info!")
 
         # Custom exceptions, unknowns
