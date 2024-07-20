@@ -13,9 +13,7 @@ aPRAW: https://pypi.org/project/aPRAW/
 
 ### TEMP
 
-Check Time: https://stackoverflow.com/questions/63625246/discord-py-bot-run-function-at-specific-time-every-day
-
-Youtube Bot: https://www.youtube.com/watch?v=KgRNnTb5kZ0
+Youtube Bot: https://www.youtube.com/watch?v=xyVY4n4_0MQ
 
 Youtube Searching: https://stackoverflow.com/questions/64021026/youtube-search-command-for-discord-py
 
@@ -32,6 +30,10 @@ Youtube Bot #2: https://www.youtube.com/watch?v=dRHUW_KnHLs
 * Install asyncio
 
     `pip install asyncio`
+* Install youtube library
+
+    `pip install youtube_dl`
+
 * To run the bot
 
     `python3 main.py`

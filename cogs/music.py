@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 from discord import FFmpegPCMAudio      # Play audio
+import asyncio
+import yt_dlp
 
 class Music(commands.Cog):
     def __init__(self, client):
@@ -8,6 +10,12 @@ class Music(commands.Cog):
         # Dictionary, store our queue of songs
         self.queues = {}
 
+        self.voice_clients = {}
+        self.yt_dl_ops = {'format': 'bestaudio/best'}
+        self.ytdl = yt_dlp.YoutubeDL(self.yt_dl_ops)
+        self.ffmpeg_options = {'options': '-vn'}
+
+    # *************** Non-command/event Functions ***************
     def check_queue(self, ctx, id):
         # if id is in our dictionary, and it is non-null
         if self.queues[id] != []:
@@ -15,6 +23,42 @@ class Music(commands.Cog):
             voice = ctx.guild.voice_client
             source = self.queues[id].pop(0)      # pop from top of stack
             player = voice.play(source)     # play song
+
+    async def play_url(self, ctx, url):
+        voice_client = await ctx.author.voice.channel.connect()
+        self.voice_clients[voice_client.guild.id] = voice_client
+
+        # Function will run independently from the program
+        loop = asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: self.ytdl.extract_info(url, download = False))
+
+        song = data['url']
+        player = discord.FFmpegPCMAudio(song, **self.ffmpeg_options)
+
+        voice_client.play(player)
+
+    # *************** Discord command/event Functions ***************
+    @commands.command()
+    async def music(self, ctx, *arg):
+        # Main entry point for music
+        print(arg)
+        try:
+            match arg[0].lower():
+                case "play":
+                    await self.play_url(ctx, arg[1])
+                
+                case "something":
+                    print("something else")
+
+                case _:
+                    raise IndexError()
+            
+        except IndexError as e:
+            await ctx.send("Usage: !music [command]\n"+
+                     "`!music help` for more info!")
+            print("IndexError: %s" % e)
+        except Exception as e:
+            await ctx.send("Error: %s" % e)
 
     @commands.command(pass_context = True)
     async def join(self, ctx):

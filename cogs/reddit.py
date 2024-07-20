@@ -329,7 +329,7 @@ class Reddit(commands.Cog):
         # Thus prompt usage error
         except IndexError:
             await ctx.send("Usage: !reddit [command]\n" \
-                           "Use `!reddit help` for more info!")
+                           "`!reddit help` for more info!")
 
         # Custom exceptions, unknowns
         except ex.UnknownCommand as e:
