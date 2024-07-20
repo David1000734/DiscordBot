@@ -4,6 +4,8 @@ from discord import FFmpegPCMAudio      # Play audio
 import asyncio
 import yt_dlp
 
+import misc.customException as ex
+
 class Music(commands.Cog):
     def __init__(self, client):
         self.client = client
@@ -24,9 +26,17 @@ class Music(commands.Cog):
             source = self.queues[id].pop(0)      # pop from top of stack
             player = voice.play(source)     # play song
 
-    async def play_url(self, ctx, url):
-        voice_client = await ctx.author.voice.channel.connect()
-        self.voice_clients[voice_client.guild.id] = voice_client
+    async def music_Play_URL(self, ctx, url):
+        voice_client = None
+        try:
+            # Try to make a voice client in this server
+            voice_client = await ctx.author.voice.channel.connect()
+
+            # Successful create, store info
+            self.voice_clients[voice_client.guild.id] = voice_client
+        except Exception as e:
+            # If one already exist, grab it
+            voice_client = self.voice_clients[ctx.guild.id]
 
         # Function will run independently from the program
         loop = asyncio.get_event_loop()
@@ -36,6 +46,36 @@ class Music(commands.Cog):
         player = discord.FFmpegPCMAudio(song, **self.ffmpeg_options)
 
         voice_client.play(player)
+    
+    async def music_Pause(self, ctx):
+        voice = discord.utils.get(self.client.voice_clients, guild = ctx.guild)
+
+        if (voice.is_playing()):
+            voice.pause()
+        else:
+            await ctx.send("No audio playing.")
+
+    async def music_Resume(self, ctx):
+        voice = discord.utils.get(self.client.voice_clients, guild = ctx.guild)
+
+        if (voice.is_paused()):
+            voice.resume()
+        else:
+            await ctx.send("No audio is paused.")
+        
+    async def music_Stop(self, ctx):
+        voice = discord.utils.get(self.client.voice_clients, guild = ctx.guild)
+
+        if voice:
+            voice.stop()
+            await self.music_Leave(ctx)
+            await ctx.send("Audio has been stopped.")
+        else:
+            raise ex.InvalidCommand("Not currently in voice. Unable to leave.")
+    
+    async def music_Leave(self, ctx):
+        if (ctx.voice_client):
+            await ctx.guild.voice_client.disconnect()
 
     # *************** Discord command/event Functions ***************
     @commands.command()
@@ -45,20 +85,31 @@ class Music(commands.Cog):
         try:
             match arg[0].lower():
                 case "play":
-                    await self.play_url(ctx, arg[1])
+                    await self.music_Play_URL(ctx, arg[1])
                 
-                case "something":
-                    print("something else")
+                case "pause":
+                    await self.music_Pause(ctx)
+
+                case "resume":
+                    await self.music_Resume(ctx)
+
+                case "stop":
+                    await self.music_Stop(ctx)
 
                 case _:
                     raise IndexError()
-            
+
         except IndexError as e:
             await ctx.send("Usage: !music [command]\n"+
                      "`!music help` for more info!")
-            print("IndexError: %s" % e)
+
+        except ex.InvalidCommand as e:
+            await ctx.send("Unable to complete \"%s\": %s" % \
+                           (arg[0], e))
+
         except Exception as e:
             await ctx.send("Error: %s" % e)
+            raise
 
     @commands.command(pass_context = True)
     async def join(self, ctx):

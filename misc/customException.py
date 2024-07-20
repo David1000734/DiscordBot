@@ -26,3 +26,13 @@ class InvalidSubreddit(Exception):
         self.message = message
         super().__init__(self.message)
 # InvalidSubreddit, END
+
+class InvalidCommand(Exception):
+    """
+    Exception raised for when an invalid command is used.
+    Ex: Attempting to do something with a command when you can't.
+    """
+
+    def __init__(self, message = None):
+        self.message = message
+        super().__init__(self.message)
