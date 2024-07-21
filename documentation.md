@@ -13,8 +13,6 @@ aPRAW: https://pypi.org/project/aPRAW/
 
 ### TEMP
 
-Youtube Bot: https://www.youtube.com/watch?v=xyVY4n4_0MQ
-
 Youtube Searching: https://stackoverflow.com/questions/64021026/youtube-search-command-for-discord-py
 
 Youtube Bot #2: https://www.youtube.com/watch?v=dRHUW_KnHLs
