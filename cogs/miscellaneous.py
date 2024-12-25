@@ -1,8 +1,6 @@
 import discord
 from discord.ext import commands
 import re
-from discord import FFmpegPCMAudio
-import asyncio
 
 
 class Miscellaneous(commands.Cog):
@@ -24,7 +22,11 @@ class Miscellaneous(commands.Cog):
                 # it with the emoji equivilant.
                 tempContent = re.sub(rf":({emoji.name}):", str(emoji), currStr)
 
+        # A replacement is done if the tempContent is bigger
+        # than the original.
         if len(msg.content) < len(tempContent):
+            # If so, replaced the original author's message with one
+            # from a bot with working emojis
             await msg.delete()
 
             # Grab author's name
@@ -75,17 +77,6 @@ class Miscellaneous(commands.Cog):
         if (not msg.author.bot and author.premium_since is None):
             await self.check_emoji(msg)
         # if premium or bot, END
-
-    @commands.Cog.listener()
-    async def on_voice_state_update(self, member, before, after):
-        # https://discordpy.readthedocs.io/en/latest/api.html#discord.on_voice_state_update
-        # Only play if this is the first time the user joined a voice channel
-        if (member.name == "chapnews" and before.channel is None):
-            voice = await after.channel.connect()
-            # player = voice.play(FFmpegPCMAudio("bombastic.mp3"))
-            voice.play(FFmpegPCMAudio("bombastic.mp3"))
-            await asyncio.sleep(6)
-            await member.guild.voice_client.disconnect()
 
 
 async def setup(client):
