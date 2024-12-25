@@ -13,10 +13,6 @@ aPRAW: https://pypi.org/project/aPRAW/
 
 ### TEMP
 
-Check Time: https://stackoverflow.com/questions/63625246/discord-py-bot-run-function-at-specific-time-every-day
-
-Youtube Bot: https://www.youtube.com/watch?v=KgRNnTb5kZ0
-
 Youtube Searching: https://stackoverflow.com/questions/64021026/youtube-search-command-for-discord-py
 
 Youtube Bot #2: https://www.youtube.com/watch?v=dRHUW_KnHLs
@@ -32,6 +28,10 @@ Youtube Bot #2: https://www.youtube.com/watch?v=dRHUW_KnHLs
 * Install asyncio
 
     `pip install asyncio`
+* Install youtube library
+
+    `pip install youtube_dl`
+
 * To run the bot
 
     `python3 main.py`
@@ -126,4 +126,30 @@ async def on_message(msg):
 
     # Needed to ensure all other commands are called after.
     await client.process_commands(msg)
+```
+
+* Taking more than one argument
+``` python
+# Just taking two
+@client.command()
+async def args(ctx, arg1, arg2):
+    await ctx.send("Command1: $s, Command2: $s" % (arg1, arg2))
+
+# All passed as list
+@client.command()
+async def args(ctx, *args):
+    await ctx.send("Commands: " + (','.join(args)))
+
+# All passed as one argument
+@client.command()
+async def args(ctx, *, arg):
+    await ctx.send(arg)
+```
+
+* Connecting to a server's webhook
+``` python
+from discord import SyncWebhook
+
+webhook = SyncWebhook.from_url("URL of server's webhook bot")
+webhook.send("Hello World!")
 ```

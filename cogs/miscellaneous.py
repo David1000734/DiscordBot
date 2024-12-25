@@ -1,5 +1,7 @@
 import discord
 from discord.ext import commands
+import re
+
 
 class Miscellaneous(commands.Cog):
     def __init__(self, client):
@@ -7,63 +9,75 @@ class Miscellaneous(commands.Cog):
 
     # *************** Non-command/event Functions ***************
     async def check_emoji(self, msg):
-        # Get just the name of the sent emoji, no colons here
-        emoji_name = msg.content[1:-1]
+        # Build the string for the bot to print it
+        tempContent = msg.content
 
-        # Get the user that sent this message
-        author = msg.guild.get_member(msg.author.id)
-        # Check to see if they have premium. Only run if false
-        if (author.premium_since is None):
-            # Look through the entire list of emoji from the server
-            for emoji in msg.guild.emojis:
-                # If one of the correct name is found, send it
-                if emoji_name == emoji.name:
-                    # First remove the old message
-                    await msg.delete()
+        # Check every emoji in server.
+        for emoji in msg.guild.emojis:
+            # We will need to update the message as we do replacements
+            currStr = tempContent
+            # Only do replacements if the emoji is animated
+            if emoji.animated:
+                # If it is animated, search for it in the message and replace
+                # it with the emoji equivilant.
+                tempContent = re.sub(rf":({emoji.name}):", str(emoji), currStr)
 
-                    # Grab author's name
-                    nickName = msg.author.display_name
+        # A replacement is done if the tempContent is bigger
+        # than the original.
+        if len(msg.content) < len(tempContent):
+            # If so, replaced the original author's message with one
+            # from a bot with working emojis
+            await msg.delete()
 
-                    # Create a webhook to send a message
-                    webhook = await msg.channel.create_webhook(name = nickName)
+            # Grab author's name
+            nickName = msg.author.display_name
 
-                    # Use webhook to send message as the author
-                    await webhook.send(
-                        str(emoji), username = nickName, avatar_url = msg.author.avatar
-                    )
+            # Create a webhook to send a message
+            webhook = await msg.channel.create_webhook(name=nickName)
 
-                    # Remove webhook after done using them
-                    webhooks = await msg.channel.webhooks()
-                    for webhook in webhooks:
-                        await webhook.delete()
+            # Use webhook to send message as the author
+            await webhook.send(
+                str(tempContent), username=nickName,
+                avatar_url=msg.author.avatar
+            )
 
-                        break           # Emoji found, end loop
-                # emoji is in the server list
-            # for, END
-        # if premium, END
+            # Remove webhook after done using them
+            webhooks = await msg.channel.webhooks()
+            for webhook in webhooks:
+                await webhook.delete()
+            # emoji is in the server list
 
     # *************** Discord command/event Functions ***************
     @commands.command()
     async def embed(self, ctx):
-        embed = discord.Embed(title = "Goooooooooogle", url = "https://google.com",\
-                            description = "Heres google", color = 0x5A2F26)
-        embed.set_author(name = ctx.author.display_name, url = "https://bing.com", icon_url = ctx.author.avatar)
-        embed.set_thumbnail(url = "https://w0.peakpx.com/wallpaper/208/932/HD-wallpaper-mountin-calm-lake-simple.jpg")
-        embed.add_field(name = "Labradore", value = "Cute Dog", inline = True)
-        embed.add_field(name = "Chihuahua", value = "Little Devil", inline = True)
-        embed.set_footer(text = "Thanks for reading :)")
+        embed = discord.Embed(
+            title="Goooooooooogle", url="https://google.com",
+            description="Heres google", color=0x5A2F26
+        )
+        embed.set_author(
+            name=ctx.author.display_name, url="https://bing.com",
+            icon_url=ctx.author.avatar
+        )
+        embed.set_thumbnail(
+            url="https://w0.peakpx.com/wallpaper/208/932/HD-wallpaper-mountin-calm-lake-simple.jpg"  # noqa: E501
+        )
+        embed.add_field(name="Labradore", value="Cute Dog", inline=True)
+        embed.add_field(name="Chihuahua", value="Little Devil", inline=True)
+        embed.set_footer(text="Thanks for reading :)")
 
-        await ctx.send(embed = embed)
+        await ctx.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message(self, msg):
+        # Get the user that sent this message
+        author = msg.guild.get_member(msg.author.id)
+
+        # Check to see if they have premium. Only run if false
         # Ignore all messages from a bot
-        if (not msg.author.bot):
-            # Detect if an emoji is sent; by, colon at start and end
-            if ((":" == msg.content[0]) and (":" == msg.content[-1])):
-                # https://stackoverflow.com/questions/4664850/how-to-find-all-occurrences-of-a-substring
-                await self.check_emoji(msg)        # process emoji command
-        # if premium, END
+        if (not msg.author.bot and author.premium_since is None):
+            await self.check_emoji(msg)
+        # if premium or bot, END
+
 
 async def setup(client):
     await client.add_cog(Miscellaneous(client))
