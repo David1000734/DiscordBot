@@ -6,11 +6,9 @@ from discord import SyncWebhook         # Connect to webhooks
 import asyncpraw
 import asyncprawcore as apc
 
-# Import keys
-import misc.botInfo.apikey as key
-
 # Import custom exceptions
 import misc.customException as ex
+
 
 class Reddit(commands.Cog):
     def __init__(self, client):
@@ -21,20 +19,23 @@ class Reddit(commands.Cog):
 
     # *************** Non-command/event Functions ***************
     async def init_Reddit(self):
+        import os
+
         # Instance must be created within async function
         # to allow for async for to work.
         self.reddit_instance = asyncpraw.Reddit(
-            client_id = key.red_clientID,
-            client_secret = key.red_secret,
-            username = key.red_username,
-            password = key.red_password,
-            user_agent = "test_bot"
+            client_id=os.getenv("REDDIT_CLIENT_ID"),
+            client_secret=os.getenv("REDDIT_SECRET"),
+            username=os.getenv("REDDIT_USERNAME"),
+            password=os.getenv("REDDIT_PASSWORD"),
+            user_agent="test_bot"
         )
 
     async def background_Task(self, sub_Name, get_limit, sleep_time, hook_URL):
         """
-        Reddit background task to be continuously ran. Each post it gets will be
-        placed into a global array and will keep track if it gets over the limit
+        Reddit background task to be continuously ran. Each post it gets will
+        be placed into a global array and will keep track if it gets
+        over the limit
 
         :param sub_Name: Name of the subreddit to be added.
         :param get_limit: Specified limit to number of post to get.
@@ -44,17 +45,17 @@ class Reddit(commands.Cog):
         :note: This task does NOT do ANY checks. All inputs are assumed valid.
         """
         await self.client.wait_until_ready()        # Don't run while sleeping
-        # Only done once. 
+        # Only done once.
         is_dup = False          # Bool, check for duplicate
         flip = True             # Flip how we append onto the list
         webhook = SyncWebhook.from_url(hook_URL)        # Connect to webhook
 
         # Time loop here
         while not self.client.is_closed():
-            subreddit = await self.reddit_instance.subreddit(sub_Name, fetch = True)
-            retrieved_post = subreddit.hot(limit = get_limit)
+            subreddit = await self.reddit_instance.subreddit(sub_Name, fetch=True)  # noqa: E501
+            retrieved_post = subreddit.hot(limit=get_limit)
             async for submission in retrieved_post:
-                # For more efficiency, use merge sort and then compare only one 
+                # For more efficiency, use merge sort and then compare only one
                 for post in self.reddit_post:
                     # Iterate through entire running total of the list.
                     if (post.id == submission.id):
@@ -65,16 +66,20 @@ class Reddit(commands.Cog):
                 if (not is_dup):
                     # Only add if it wasn't on the list already
 
-                    # We must flip how we add it from the first run and the continuous ones.
+                    # We must flip how we add it from the first run
+                    # and the continuous ones.
                     if (flip):
-                        self.reddit_post.append(submission)      # Add to end of list
+                        # Add to end of list
+                        self.reddit_post.append(submission)
                     else:
-                        self.reddit_post.insert(0, submission)   # Add to beginning of list
+                        # Add to beginning of list
+                        self.reddit_post.insert(0, submission)
 
                     # Not a duplicate, print it.
                     # Build discord message here.
-                    webhook.send(submission.title + ' '\
-                        + submission.url +'\n' + "https://www.reddit.com" + submission.permalink)
+                    webhook.send(submission.title + ' ' + submission.url
+                                 + '\n' + "https://www.reddit.com"
+                                 + submission.permalink)
                 # if, END
                 # Otherwise, it is a duplicate. Don't do anything
                 is_dup = False                      # Reset variable
@@ -89,10 +94,11 @@ class Reddit(commands.Cog):
                 post_Counter = 0
                 # We went over, remove the diference. Last to First
                 for post in self.reddit_post:
-                    # If the counter went over limit, remove the very last posts
-                    if (post.subreddit.display_name == sub_Name and post_Counter >= get_limit):
+                    # If the counter went over limit,
+                    # remove the very last posts
+                    if (post.subreddit.display_name == sub_Name and post_Counter >= get_limit):     # noqa: E501
                         # Find the correct name and remove only the
-                        # post that went over the limit. (The very last few or oldest)
+                        # post that went over the limit. (Last or oldest)
                         self.reddit_post.remove(post)
 
                     # Limit not reached, increment here
@@ -118,9 +124,9 @@ class Reddit(commands.Cog):
 
     async def reddit_Add(self, arg, URL):
         """
-        Function will attempt to create a new background task with the specified
-        subreddit. All subreddit and webhook tests are also done here.
-        If any fail, an exception is raised. 
+        Function will attempt to create a new background task with
+        the specified subreddit. All subreddit and webhook tests
+        are also done here. If any fail, an exception is raised.
 
         :param arg: The subreddit to add
         :param URL: What is the URL of the webhook
@@ -130,7 +136,7 @@ class Reddit(commands.Cog):
         # Used to find out if task has already been created.
         found = False
 
-        # Error check below, any exceptions will be caught by the 
+        # Error check below, any exceptions will be caught by the
         # calling function.
         # *************** Check for Duplicate Subs ***************
         # Iterate through the task list
@@ -144,20 +150,22 @@ class Reddit(commands.Cog):
 
         # If one is found, error
         if (found):
-            raise apc.AsyncPrawcoreException("Duplicate subreddit tasks is not allowed.")
+            raise apc.AsyncPrawcoreException(
+                "Duplicate subreddit is not allowed."
+            )
         # *************** Duplicate Subs, END ***************
 
         # *************** Check for Valid Subreddits ***************
         # Ensure that it has been instantiated.
-        if (self.reddit_instance == None):
+        if (self.reddit_instance is None):
             await self.init_Reddit()
 
         # Find valid subreddits by attempting to get from them.
         # Get the subreddit
-        subRed = await self.reddit_instance.subreddit(arg, fetch = True)
+        subRed = await self.reddit_instance.subreddit(arg, fetch=True)
 
         # Attempt to search it
-        async for submission in subRed.new(limit = 3):
+        async for submission in subRed.new(limit=3):
             pass
         # *************** Valid Subs, END ***************
 
@@ -168,11 +176,12 @@ class Reddit(commands.Cog):
         # No exceptions were raised, thus, valid input
 
         # Create time loop. Continuously run this function.
-        current_tasks = self.client.loop.create_task(self.background_Task(\
-                        sub_Name = arg, get_limit = 5,\
-                        sleep_time = 900, hook_URL = URL))
+        current_tasks = self.client.loop.create_task(self.background_Task(
+                        sub_Name=arg, get_limit=5,
+                        sleep_time=900, hook_URL=URL))
 
-        current_tasks.set_name(arg)     # Set the name to be the same as the subreddit
+        # Set the name to be the same as the subreddit
+        current_tasks.set_name(arg)
         self.reddit_Task.append(current_tasks)      # store to array
         # If valid sub, END
     # reddit_add, END
@@ -198,14 +207,20 @@ class Reddit(commands.Cog):
                 # Remove from the list
                 self.reddit_Task.remove(currSub)
 
-                await ctx.send("Successfully removed subreddit: \"%s\", from tasks." % arg)
+                await ctx.send(
+                    "Successfully removed subreddit: \"%s\", from tasks." %
+                    (arg)
+                )
 
                 found = True        # Set flag
                 break               # Exit loop
-        
+
         if (not found):
-            await ctx.send("Subreddit: \"%s\" not found. Unable to remove." % arg)
-        else: 
+            await ctx.send(
+                "Subreddit: \"%s\" not found. Unable to remove." %
+                (arg)
+            )
+        else:
             # Also remove it's post from the list
             for post in self.reddit_post:
                 # Look for the post that matches this subreddit
@@ -236,9 +251,12 @@ class Reddit(commands.Cog):
         :param ctx: Method of printing
         """
         for currSub in self.reddit_Task:
-            await ctx.send("Removed subreddit: \"%s\", from tasks." % currSub.get_name())
+            await ctx.send(
+                "Removed subreddit: \"%s\", from tasks." %
+                (currSub.get_name())
+            )
             currSub.cancel()
-        
+
         # Clear background task list
         self.reddit_Task.clear()
 
@@ -250,23 +268,25 @@ class Reddit(commands.Cog):
         """
         Function will print a help message for how to use
         the reddit command.
-        
+
         :param ctx: Method of printing
         """
         # Send help message. Formating...
-        await ctx.send("```\n"     \
-            + " Help ".center(50, '_') + "\n\n" \
-            + "usage: !reddit [commands] ...\n"  \
-            + "\t[commands]: add <subreddit> <webhook_URL>, remove <subreddit>, clear, list, help.\n\n" \
-            + "\t[subreddit]: Whatever the name of the subreddit it may be. Remember, " \
-            + "banned or subreddits containing spaces are not allowed.\n\n" \
-            + "\t[webhook_URL]: Please provide the URL of a webhook that is created and set it up " \
-            + "within the server. Refer to this link for help https://www.youtube.com/watch?v=fKksxz2Gdnc.\n\n" \
-            + "add: Add the specified subreddit into the queue and post using the provided webhook.\n" \
-            + "remove: Remove the specified subreddit from tasks if it exist.\n" \
-            + "clear: Clear all subreddit from tasks.\n" \
-            + "list: Show all current subreddits running.\n" \
-            + "```")
+        await ctx.send(
+            "```\n"
+            + " Help ".center(50, '_') + "\n\n"
+            + "usage: !reddit [commands] ...\n"
+            + "\t[commands]: add <subreddit> <webhook_URL>, remove <subreddit>, clear, list, help.\n\n"          # noqa: E501
+            + "\t[subreddit]: Whatever the name of the subreddit it may be. Remember, "                          # noqa: E501
+            + "banned or subreddits containing spaces are not allowed.\n\n"
+            + "\t[webhook_URL]: Please provide the URL of a webhook that is created and set it up "              # noqa: E501
+            + "within the server. Refer to this link for help https://www.youtube.com/watch?v=fKksxz2Gdnc.\n\n"  # noqa: E501
+            + "add: Add the specified subreddit into the queue and post using the provided webhook.\n"           # noqa: E501
+            + "remove: Remove the specified subreddit from tasks if it exist.\n"                                 # noqa: E501
+            + "clear: Clear all subreddit from tasks.\n"
+            + "list: Show all current subreddits running.\n"
+            + "```"
+        )
 
     # *************** Discord command/event Functions ***************
     @commands.command()
@@ -283,7 +303,7 @@ class Reddit(commands.Cog):
             # arg[0] will will contain the command
             match arg[0].lower():
                 # add command will add a new background task for the subreddit
-                case "add":                    
+                case "add":
                     # 3 is the correct number of arguments for this command
                     if (len(arg) != 3):
                         # 3 arguments were not provided, error
@@ -291,7 +311,7 @@ class Reddit(commands.Cog):
                     else:
                         # arg[1] contains the word
                         await self.reddit_Add(arg[1], arg[2])
-                
+
                 # Attempt to remove a reddit background task if one exist
                 case "remove":
                     if (len(arg) > 2):
@@ -306,7 +326,7 @@ class Reddit(commands.Cog):
                         raise ex.UnknownCommand()
                     else:
                         await self.reddit_Clear(ctx)
-                    
+
                 case "list":
                     if (len(arg) > 1):
                         raise ex.UnknownCommand()
@@ -324,25 +344,25 @@ class Reddit(commands.Cog):
                     # Have the try catch do the message
                     raise IndexError("")
             # Match, END
-        
+
         # Tuple out of range when ran with "!reddit"
         # Thus prompt usage error
         except IndexError:
-            await ctx.send("Usage: !reddit [command]\n" \
+            await ctx.send("Usage: !reddit [command]\n"
                            "`!reddit help` for more info!")
 
         # Custom exceptions, unknowns
-        except ex.UnknownCommand as e:
+        except ex.UnknownCommand:
             await ctx.send("Unknown command: \"%s\"" % " ".join(arg))
-        
+
         # Custom exception, invalid subreddits
-        except ex.InvalidSubreddit as e:
-            await ctx.send("Error: Subreddit \"%s\" is not allowed." \
-                                    % " ".join(arg[ 1: ]))
+        except ex.InvalidSubreddit:
+            await ctx.send("Error: Subreddit \"%s\" is not allowed." %
+                           (" ".join(arg[1:])))
 
         # Handle exceptions that comes from inside reddit_add function.
         except apc.AsyncPrawcoreException as error:
-            await ctx.send("Subreddit: \"%s\" Error: %s" % (arg[1], error))        
+            await ctx.send("Subreddit: \"%s\" Error: %s" % (arg[1], error))
 
         # Default catch all exceptions
         except Exception as error:
@@ -351,6 +371,7 @@ class Reddit(commands.Cog):
         # try except, END
     # Reddit command block, END
 # Reddit class, END
+
 
 async def setup(client):
     await client.add_cog(Reddit(client))

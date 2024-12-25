@@ -4,16 +4,18 @@ exception is to be used in try except cases where it would be
 preferable to raise one of these to improve readability.
 """
 
+
 class UnknownCommand(Exception):
     """
     Exception raised for commands that exceed the maxium neccessary
     words for the command. Message is not required.
     """
 
-    def __init__(self, message = None):
+    def __init__(self, message=None):
         self.message = message
         super().__init__(self.message)
 # UnknownCommand, END
+
 
 class InvalidSubreddit(Exception):
     """
@@ -22,10 +24,11 @@ class InvalidSubreddit(Exception):
     (No subreddits should contain a space). Message is not required
     """
 
-    def __init__(self, message = None):
+    def __init__(self, message=None):
         self.message = message
         super().__init__(self.message)
 # InvalidSubreddit, END
+
 
 class InvalidCommand(Exception):
     """
@@ -33,6 +36,6 @@ class InvalidCommand(Exception):
     Ex: Attempting to do something with a command when you can't.
     """
 
-    def __init__(self, message = None):
+    def __init__(self, message=None):
         self.message = message
         super().__init__(self.message)

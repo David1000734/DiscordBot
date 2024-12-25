@@ -1,0 +1,5 @@
+[flake8]
+exclude =
+    # Ignore environmental files
+    .venv
+    __pycache__
