@@ -51,7 +51,7 @@ async def on_message(message):
 ```
 NOTE: Emoji ID can be found by sending the emoji, copy link, paste, and copying the numbers that appear just before the .gif or .png
 
-![alt text](/misc/images/emoji_id.png)
+![Aquire Emoji ID](/.github/assets/emoji_id.png)
 
 * Adding reactions to messages is very similar to sending an emoji
 ```python

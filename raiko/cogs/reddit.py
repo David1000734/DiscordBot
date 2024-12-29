@@ -5,9 +5,8 @@ from discord import SyncWebhook         # Connect to webhooks
 # Import reddit api. Async version
 import asyncpraw
 import asyncprawcore as apc
-
 # Import custom exceptions
-import misc.customException as ex
+import raiko.misc.customException as ex
 
 
 class Reddit(commands.Cog):
