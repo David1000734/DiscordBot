@@ -1,5 +1,6 @@
 import os
 from discord.ext import commands
+from raiko.types import parameters      # noqa F401
 
 discord_botspam = os.getenv("DISCORD_BOTSPAM")
 
@@ -11,6 +12,11 @@ class Greetings (commands.Cog):
     # Hello event, ctx: "inputs" from discord
     @commands.command()
     async def hello(self, ctx):
+        # Do stuff with global variable
+        # print(f"Before: {parameters.server_list}")      # DEBUG
+        # parameters.server_list[55] = "Good morning sir"     # DEBUG
+        # print(f"After: {parameters.server_list}")       # DEBUG
+
         await ctx.send("Hello from the bot!")
 
     # Event, someone joins the server

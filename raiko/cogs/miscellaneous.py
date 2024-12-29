@@ -1,6 +1,6 @@
 import discord
+import re                               # Regular Expressions
 from discord.ext import commands
-import re
 
 
 class Miscellaneous(commands.Cog):

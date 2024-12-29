@@ -196,7 +196,7 @@ class Music(commands.Cog):
         voice = discord.utils.get(self.client.voice_clients, guild=ctx.guild)
 
         voice.stop()
-        await ctx.send("Audio has been stopped.")           # DEBUG
+        await ctx.send("Audio has been stopped.")
 
     # @commands.command(pass_content = True)
     # async def play(self, ctx, *arg):

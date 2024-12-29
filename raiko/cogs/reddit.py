@@ -1,12 +1,9 @@
-from discord.ext import commands
-import asyncio      # Import time keeping/looping
-from discord import SyncWebhook         # Connect to webhooks
-
-# Import reddit api. Async version
-import asyncpraw
+import asyncio                              # Import time keeping/looping
+import asyncpraw                            # Reddit api. Async version
 import asyncprawcore as apc
-# Import custom exceptions
-import raiko.misc.customException as ex
+import raiko.misc.customException as ex     # Custom exceptions
+from discord import SyncWebhook             # Connect to webhooks
+from discord.ext import commands
 
 
 class Reddit(commands.Cog):

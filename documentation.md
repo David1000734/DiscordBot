@@ -18,23 +18,14 @@ Youtube Searching: https://stackoverflow.com/questions/64021026/youtube-search-c
 Youtube Bot #2: https://www.youtube.com/watch?v=dRHUW_KnHLs
 
 ### Steps for gettings started:
+* Be sure to fill out the .env example for relavent data then install the
+    requirements and run the code
 
-* Install discord library
+```bash
+    pip install -r requirements.txt
 
-    `pip install discord.py`
-* Install async reddit library
-
-    `pip install asyncpraw`
-* Install asyncio
-
-    `pip install asyncio`
-* Install youtube library
-
-    `pip install youtube_dl`
-
-* To run the bot
-
-    `python3 main.py`
+    python -m raiko
+```
 
 ### Example codes
 * Detecting a specific word in a message and sending an emoji. Static and animated
